@@ -1,0 +1,110 @@
+import openai from "./openai";
+
+interface RecipeFilters {
+  dietaryRestrictions?: string[]; // e.g., ['vegetarian', 'gluten-free']
+  maxCalories?: number;
+  cuisine?: string; // e.g., 'Italian', 'Mexican'
+  cookingTime?: number; // max minutes
+}
+
+interface Recipe {
+  name: string;
+  description: string;
+  prepTime: string;
+  cookTime: string;
+  servings: number;
+  calories: number;
+  ingredients: {
+    name: string;
+    amount: string;
+    fromKitchen: boolean; // true if user has this ingredient
+  }[];
+  instructions: string[];
+  tags: string[];
+}
+
+export async function generateRecipes(
+  availableIngredients: string[], // Just the names of ingredients user has
+  filters?: RecipeFilters
+): Promise<Recipe[]> {
+  try {
+    const filterText = filters
+      ? `
+Dietary Restrictions: ${filters.dietaryRestrictions?.join(", ") || "None"}
+Max Calories: ${filters.maxCalories || "No limit"}
+Cuisine Preference: ${filters.cuisine || "Any"}
+Max Cooking Time: ${filters.cookingTime ? `${filters.cookingTime} minutes` : "No limit"}
+`
+      : "No specific filters";
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional chef and recipe creator. Generate 3-5 recipe suggestions based on available ingredients.
+
+Rules:
+- PRIORITIZE recipes that use ONLY the available ingredients - this is most important!
+- Only suggest additional ingredients if absolutely necessary (like salt, pepper, oil which are common staples)
+- Try to create at least 2-3 recipes that use ONLY available ingredients with no additional purchases
+- If you must suggest buying something, it should be 1-2 common items maximum
+- Mark ingredients accurately: fromKitchen: true for available, fromKitchen: false for items to buy
+- Respect all dietary restrictions and filters strictly
+- Be creative but practical with available ingredients
+- Provide accurate calorie estimates
+
+Return ONLY a valid JSON array of recipes with no additional text. Example format:
+[
+  {
+    "name": "Grilled Chicken Salad",
+    "description": "A fresh and healthy salad with grilled chicken",
+    "prepTime": "15 minutes",
+    "cookTime": "20 minutes",
+    "servings": 2,
+    "calories": 350,
+    "ingredients": [
+      {"name": "Chicken Breast", "amount": "200g", "fromKitchen": true},
+      {"name": "Lettuce", "amount": "2 cups", "fromKitchen": true}
+    ],
+    "instructions": [
+      "Season the chicken breast with salt and pepper",
+      "Grill chicken for 8-10 minutes per side",
+      "Chop lettuce and prepare salad",
+      "Slice grilled chicken and place on salad"
+    ],
+    "tags": ["healthy", "protein-rich", "quick"]
+  }
+]`,
+        },
+
+        {
+          role: "user",
+          content: `Generate recipe suggestions using these available ingredients:
+${availableIngredients.join(", ")}
+
+Filters:
+${filterText}
+
+Provide 3-5 diverse recipe options in JSON format.`,
+        },
+      ],
+      max_tokens: 2500,
+      temperature: 0.7,
+    });
+
+    const content = response.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error("No response from OpenAI");
+    }
+
+    // Parse the JSON response
+    const recipes: Recipe[] = JSON.parse(content);
+
+    return recipes;
+  } catch (error) {
+    console.error("Error generating recipes:", error);
+    throw error;
+  }
+}

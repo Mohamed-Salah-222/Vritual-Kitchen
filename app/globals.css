@@ -1,5 +1,20 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@layer clerk;
+
+/* Font assignments */
+body {
+  font-family: var(--font-playpen), sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-comfortaa), sans-serif;
+}
 
 @custom-variant dark (&:is(.dark *));
 
@@ -119,4 +134,47 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+/* Landing Page Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes float-delayed {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 3s ease-in-out infinite 1s;
 }
