@@ -3,7 +3,9 @@ import connectDB from "@/lib/mongodb";
 import Recipe from "@/models/Recipe";
 import { auth } from "@clerk/nextjs/server";
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
+
   try {
     const { userId } = await auth();
     if (!userId) {
