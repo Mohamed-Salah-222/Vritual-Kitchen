@@ -32,12 +32,27 @@ export default function Navbar() {
               </Link>
               <Link href="/kitchen">
                 <Button variant="ghost" className="hover:bg-[#ded8c5] cursor-pointer transition-all">
-                  My Kitchen
+                  Kitchen
                 </Button>
               </Link>
               <Link href="/recipes">
                 <Button variant="ghost" className="hover:bg-[#ded8c5] cursor-pointer transition-all">
                   Recipes
+                </Button>
+              </Link>
+              <Link href="/favorites">
+                <Button variant="ghost" className="hover:bg-[#ded8c5] cursor-pointer transition-all">
+                  Favorites
+                </Button>
+              </Link>
+              <Link href="/history">
+                <Button variant="ghost" className="hover:bg-[#ded8c5] cursor-pointer transition-all">
+                  History
+                </Button>
+              </Link>
+              <Link href="/shopping-list">
+                <Button variant="ghost" className="hover:bg-[#ded8c5] cursor-pointer transition-all">
+                  Shopping List
                 </Button>
               </Link>
             </div>
@@ -68,20 +83,35 @@ export default function Navbar() {
 
       {/* Mobile Navigation - Only show when signed in */}
       {isSignedIn && (
-        <div className="md:hidden border-t border-[#ded8c5] px-4 py-3 flex gap-3">
-          <Link href="/upload" className="flex-1">
-            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all">
+        <div className="md:hidden border-t border-[#ded8c5] px-4 py-3 grid grid-cols-3 gap-2">
+          <Link href="/upload">
+            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all text-xs">
               Upload
             </Button>
           </Link>
-          <Link href="/kitchen" className="flex-1">
-            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all">
+          <Link href="/kitchen">
+            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all text-xs">
               Kitchen
             </Button>
           </Link>
-          <Link href="/recipes" className="flex-1">
-            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all">
+          <Link href="/recipes">
+            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all text-xs">
               Recipes
+            </Button>
+          </Link>
+          <Link href="/favorites">
+            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all text-xs">
+              Favorites
+            </Button>
+          </Link>
+          <Link href="/history">
+            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all text-xs">
+              History
+            </Button>
+          </Link>
+          <Link href="/shopping-list">
+            <Button variant="ghost" className="w-full hover:bg-[#ded8c5] cursor-pointer transition-all text-xs">
+              Shopping
             </Button>
           </Link>
         </div>

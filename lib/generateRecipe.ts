@@ -1,10 +1,12 @@
 import openai from "./openai";
 
 interface RecipeFilters {
-  dietaryRestrictions?: string[]; // e.g., ['vegetarian', 'gluten-free']
+  dietaryRestrictions?: string[];
   maxCalories?: number;
-  cuisine?: string; // e.g., 'Italian', 'Mexican'
-  cookingTime?: number; // max minutes
+  cuisine?: string;
+  cookingTime?: number;
+  servings?: number;
+  mealType?: string;
 }
 
 interface Recipe {
@@ -34,6 +36,8 @@ Dietary Restrictions: ${filters.dietaryRestrictions?.join(", ") || "None"}
 Max Calories: ${filters.maxCalories || "No limit"}
 Cuisine Preference: ${filters.cuisine || "Any"}
 Max Cooking Time: ${filters.cookingTime ? `${filters.cookingTime} minutes` : "No limit"}
+Servings: ${filters.servings || "Any"}
+Meal Type: ${filters.mealType || "Any"}
 `
       : "No specific filters";
 
@@ -51,10 +55,15 @@ Rules:
 - If you must suggest buying something, it should be 1-2 common items maximum
 - Mark ingredients accurately: fromKitchen: true for available, fromKitchen: false for items to buy
 - Respect all dietary restrictions and filters strictly
+- If a meal type is specified (Breakfast, Lunch, Dinner, Snack, Dessert), generate appropriate recipes for that meal
+- ALL RECIPES MUST BE HALAL by default (no pork, no alcohol in cooking)
 - Be creative but practical with available ingredients
 - Provide accurate calorie estimates
 
-Return ONLY a valid JSON array of recipes with no additional text. Example format:
+CRITICAL: Return ONLY a valid JSON array with no markdown formatting, no backticks, no code blocks, no additional text.
+Your response must start with [ and end with ].
+
+Example format:
 [
   {
     "name": "Grilled Chicken Salad",
@@ -77,7 +86,6 @@ Return ONLY a valid JSON array of recipes with no additional text. Example forma
   }
 ]`,
         },
-
         {
           role: "user",
           content: `Generate recipe suggestions using these available ingredients:
@@ -99,10 +107,41 @@ Provide 3-5 diverse recipe options in JSON format.`,
       throw new Error("No response from OpenAI");
     }
 
-    // Parse the JSON response
-    const recipes: Recipe[] = JSON.parse(content);
+    let cleanedContent = content.trim();
 
-    return recipes;
+    // Remove markdown code blocks if present
+    if (cleanedContent.startsWith("```json")) {
+      cleanedContent = cleanedContent.replace(/^```json\s*/, "").replace(/```\s*$/, "");
+    } else if (cleanedContent.startsWith("```")) {
+      cleanedContent = cleanedContent.replace(/^```\s*/, "").replace(/```\s*$/, "");
+    }
+
+    cleanedContent = cleanedContent.trim();
+
+    // Check if response starts with valid JSON
+    if (!cleanedContent.startsWith("[") && !cleanedContent.startsWith("{")) {
+      console.warn("AI returned non-JSON response:", cleanedContent);
+      throw new Error("Invalid response format from AI");
+    }
+
+    // Parse the JSON response
+    const recipes: Recipe[] = JSON.parse(cleanedContent);
+
+    // Verify ingredient availability with actual quantities
+    const recipesWithCorrectAvailability = recipes.map((recipe) => ({
+      ...recipe,
+      ingredients: recipe.ingredients.map((recipeIng) => {
+        const kitchenIng = availableIngredients.find((name) => name.toLowerCase() === recipeIng.name.toLowerCase());
+
+        // Mark as available only if ingredient name matches
+        return {
+          ...recipeIng,
+          fromKitchen: !!kitchenIng,
+        };
+      }),
+    }));
+
+    return recipesWithCorrectAvailability;
   } catch (error) {
     console.error("Error generating recipes:", error);
     throw error;

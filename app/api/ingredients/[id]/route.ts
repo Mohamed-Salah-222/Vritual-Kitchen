@@ -12,29 +12,44 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const { id } = params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json({ error: "Invalid ingredient ID" }, { status: 400 });
-    }
-
     const body = await request.json();
-    const { name, quantity, unit, category } = body;
 
     await connectDB();
 
-    // Make sure the ingredient belongs to the user
-    const ingredient = await Ingredient.findOne({ _id: id, userId });
+    // Get the old ingredient to check if it was above 0
+    const oldIngredient = await Ingredient.findOne({ _id: id, userId });
 
-    if (!ingredient) {
+    if (!oldIngredient) {
       return NextResponse.json({ error: "Ingredient not found" }, { status: 404 });
     }
 
-    ingredient.name = name;
-    ingredient.quantity = quantity;
-    ingredient.unit = unit;
-    ingredient.category = category;
-    ingredient.lastUpdated = new Date();
-    await ingredient.save();
+    const oldQuantity = parseFloat(oldIngredient.quantity);
+    const newQuantity = parseFloat(body.quantity);
+
+    // Update the ingredient
+    const ingredient = await Ingredient.findOneAndUpdate({ _id: id, userId }, { ...body, lastUpdated: new Date() }, { new: true });
+
+    // Auto-add to shopping list if quantity dropped to 0 and it was essential
+    if (oldQuantity > 0 && newQuantity === 0 && oldIngredient.isEssential) {
+      const ShoppingList = (await import("@/models/ShoppingList")).default;
+
+      // Check if already in shopping list
+      const existingItem = await ShoppingList.findOne({
+        userId,
+        name: { $regex: new RegExp(`^${ingredient.name}$`, "i") },
+        isPurchased: false,
+      });
+
+      if (!existingItem) {
+        await ShoppingList.create({
+          userId,
+          name: ingredient.name,
+          quantity: "1",
+          unit: ingredient.unit,
+          category: ingredient.category,
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,

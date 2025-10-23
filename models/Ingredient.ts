@@ -24,6 +24,10 @@ const IngredientSchema = new Schema({
     required: true,
     enum: ["protein", "carbs", "vegetables", "fruits", "dairy", "spices", "oils", "sweets", "other"],
   },
+  isEssential: {
+    type: Boolean,
+    default: false,
+  },
   addedAt: {
     type: Date,
     default: Date.now,
@@ -33,7 +37,6 @@ const IngredientSchema = new Schema({
     default: Date.now,
   },
 });
-
 const Ingredient = models.Ingredient || mongoose.model("Ingredient", IngredientSchema);
 
 export default Ingredient;

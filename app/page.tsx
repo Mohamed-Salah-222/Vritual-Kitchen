@@ -10,16 +10,16 @@ export default async function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0eae3] via-[#ece7e0] to-[#eae4dd]">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden animate-fadeInUp">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 text-center">
           {/* Main Heading */}
           <div className="mb-8 animate-fade-in">
-            <h1 className="text-6xl md:text-7xl font-[700] text-gray-900 mb-6 leading-tight">
-              Your Kitchen,
+            <h1 className="text-7xl md:text-8xl font-[700] text-gray-900 mb-6 leading-tight">
+              Your Kitchen
               <br />
               <span className="bg-gradient-to-r from-[#372f29] to-[#211b16] bg-clip-text text-transparent">Reimagined by AI</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">Snap a photo of your ingredients and let AI create personalized recipes. No more wondering what is for dinner?</p>
+            <p className="text-2xl md:text-3xl text-gray-600 max-w-3xl mx-auto leading-relaxed">Snap a photo of your ingredients and let AI create personalized recipes. No more wondering what is for dinner?</p>
           </div>
 
           {/* CTA Buttons */}
@@ -43,16 +43,16 @@ export default async function LandingPage() {
 
           {/* Feature Badges */}
           <div className="flex flex-wrap gap-3 justify-center text-sm text-gray-600">
-            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5]">✨ AI-Powered</span>
-            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5]">📸 Image Recognition</span>
-            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5]">🍳 Personalized Recipes</span>
-            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5]">🌱 Dietary Filters</span>
+            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5] hover:shadow-md hover:scale-105 transition-all cursor-default">✨ AI-Powered</span>
+            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5] hover:shadow-md hover:scale-105 transition-all cursor-default">📸 Image Recognition</span>
+            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5] hover:shadow-md hover:scale-105 transition-all cursor-default">🍳 Personalized Recipes</span>
+            <span className="px-4 py-2 bg-[#ebe6de] rounded-full shadow-sm border border-[#ded8c5] hover:shadow-md hover:scale-105 transition-all cursor-default">🌱 Dietary Filters</span>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-[#f0eae3]">
+      <section className="py-28 bg-[#f0eae3] animate-fadeInUp">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-4">How It Works</h2>
           <p className="text-xl text-gray-600 text-center mb-16 max-w-2xl mx-auto">Three simple steps to discover amazing recipes</p>
@@ -88,53 +88,154 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-gradient-to-br from-[#ece7e0] to-[#e9e3dc]">
+      {/* Feature Showcase Sections */}
+
+      {/* Feature 1: Receipt Scanner */}
+      <section className="py-28 bg-[#f0eae3]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16">Why Choose Virtual Kitchen?</h2>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-[#ebe6de] p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-[#ded8c5]">
-              <div className="bg-[#ded8c5] w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Clock className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">Save Time</h3>
-              <p className="text-gray-600">No more scrolling through recipe sites. Get instant suggestions based on what you have.</p>
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Image Left */}
+            <div className="  flex items-center justify-center">
+              <Image src="/receipt.jpg" alt="Receipt Scanner Feature" width={600} height={600} className="rounded-2xl shadow-xl w-full h-auto object-cover" />
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-[#ebe6de] p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-[#ded8c5]">
-              <div className="bg-[#ded8c5] w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl">💰</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Reduce Waste</h3>
-              <p className="text-gray-600">Use ingredients before they expire. Track what you have and what you need.</p>
+            {/* Text Right */}
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                Scan Your Receipt,
+                <br />
+                Add Everything Instantly
+              </h2>
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed">Just bought groceries? Take one photo of your receipt and our AI extracts every item automatically. No manual typing, no hassle.</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">📸</span>
+                  <span className="text-gray-700">One photo captures everything</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">⚡</span>
+                  <span className="text-gray-700">Instant AI extraction and organization</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">✨</span>
+                  <span className="text-gray-700">Automatically categorized by type</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature 2: Smart Shopping List */}
+      <section className="py-28 bg-[#ebe6de]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Text Left */}
+            <div className="order-2 md:order-1">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                Never Forget
+                <br />
+                What You Need
+              </h2>
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed">Generate smart shopping lists from your favorite recipes. Know exactly what to buy and never waste time wandering the aisles.</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">📝</span>
+                  <span className="text-gray-700">Auto-generate from any recipe</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">🛒</span>
+                  <span className="text-gray-700">Organized by grocery sections</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">✅</span>
+                  <span className="text-gray-700">Check off items as you shop</span>
+                </li>
+              </ul>
             </div>
 
-            {/* Feature 3 */}
-            <div className="bg-[#ebe6de] p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-[#ded8c5]">
-              <div className="bg-[#ded8c5] w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl">🎯</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Personalized</h3>
-              <p className="text-gray-600">Filter by dietary restrictions, calories, cuisine type, and cooking time.</p>
+            {/* Image Right */}
+            <div className="bg-[#ded8c5] rounded-2xl aspect-square flex items-center justify-center shadow-xl order-1 md:order-2">
+              <p className="text-[#372f29] text-xl font-semibold">Shopping List Visual</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature 3: Dietary Filters */}
+      <section className="py-28 bg-[#f0eae3]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Image Left */}
+            <div className="bg-[#ded8c5] rounded-2xl aspect-square flex items-center justify-center shadow-xl">
+              <p className="text-[#372f29] text-xl font-semibold">Dietary Filters Visual</p>
             </div>
 
-            {/* Feature 4 */}
-            <div className="bg-[#ebe6de] p-6 rounded-2xl shadow-lg hover:shadow-xl transition-shadow border border-[#ded8c5]">
-              <div className="bg-[#ded8c5] w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl">🚀</span>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Super Easy</h3>
-              <p className="text-gray-600">No manual typing. Just take photos and let AI do the work.</p>
+            {/* Text Right */}
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                Your Diet,
+                <br />
+                Your Rules
+              </h2>
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed">Vegan? Keto? Gluten-free? Filter recipes instantly to match your dietary needs and preferences. Every suggestion respects your choices.</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">🌱</span>
+                  <span className="text-gray-700">8+ dietary preferences supported</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">🔍</span>
+                  <span className="text-gray-700">Calorie and cooking time filters</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">🍽️</span>
+                  <span className="text-gray-700">Cuisine-specific recommendations</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature 4: Ingredient Tracking */}
+      <section className="py-28 bg-[#ebe6de]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            {/* Text Left */}
+            <div className="order-2 md:order-1">
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                Know What You Have,
+                <br />
+                Always
+              </h2>
+              <p className="text-xl text-gray-600 mb-6 leading-relaxed">Your virtual kitchen keeps track of everything. See what is in stock, what is running low, and what you need to restock - all in one place.</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">📦</span>
+                  <span className="text-gray-700">Complete inventory overview</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">🔔</span>
+                  <span className="text-gray-700">Low stock reminders</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="text-2xl">🗂️</span>
+                  <span className="text-gray-700">Organized by category</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Image Right */}
+            <div className=" flex items-center justify-center  order-1 md:order-2">
+              <Image src="/kitchen.png" alt="Receipt Scanner Feature" width={600} height={600} className="rounded-2xl shadow-xl w-full h-auto object-cover" />
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-[#372f29] to-[#211b16]">
+      <section className="py-28 bg-gradient-to-r from-[#372f29] to-[#211b16] animate-fadeInUp">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">Ready to Transform Your Cooking?</h2>
           <p className="text-xl text-[#ded8c5] mb-8 max-w-2xl mx-auto">Join thousands of home cooks who never run out of recipe ideas.</p>
@@ -160,7 +261,7 @@ export default async function LandingPage() {
       <footer className="bg-[#211b16] text-[#ded8c5] py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Image src="/kitchenLogo.png" alt="Kitchen Logo" width={32} height={32} />
+            <Image src="/whiteLogo.png" alt="Kitchen Logo" width={32} height={32} />
             <span className="text-white text-xl font-bold">Virtual Kitchen</span>
           </div>
           <p className="text-sm">© 2025 Virtual Kitchen. Powered by AI. Made with ❤️ for home cooks.</p>

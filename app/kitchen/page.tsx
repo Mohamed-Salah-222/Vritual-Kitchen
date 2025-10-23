@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Edit2, Trash2, Plus, Search, Package, ChefHat, Upload as UploadIcon, Sparkles } from "lucide-react";
+import { Loader2, Edit2, Trash2, Plus, Search, Package, ChefHat, Upload as UploadIcon, Sparkles, Flag, Minus, Check, X as XIcon, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 
 interface Ingredient {
   _id: string;
@@ -13,6 +14,7 @@ interface Ingredient {
   unit: string;
   category: string;
   emoji: string;
+  isEssential: boolean;
 }
 
 export default function KitchenPage() {
@@ -22,6 +24,9 @@ export default function KitchenPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
+  const [batchMode, setBatchMode] = useState(false);
 
   useEffect(() => {
     fetchIngredients();
@@ -40,12 +45,13 @@ export default function KitchenPage() {
     } catch (err) {
       console.error("Fetch error:", err);
       setError(err instanceof Error ? err.message : "Failed to load ingredients");
+      toast.error("Failed to load ingredients");
     } finally {
       setLoading(false);
     }
   };
 
-  const updateIngredient = async (id: string, field: keyof Ingredient, value: string) => {
+  const updateIngredient = async (id: string, field: keyof Ingredient, value: string | boolean) => {
     setIngredients((prev) => prev.map((ing) => (ing._id === id ? { ...ing, [field]: value } : ing)));
   };
 
@@ -65,9 +71,11 @@ export default function KitchenPage() {
       }
 
       setEditingId(null);
+      toast.success("Ingredient updated!");
     } catch (err) {
       console.error("Update error:", err);
       setError(err instanceof Error ? err.message : "Failed to update ingredient");
+      toast.error("Failed to update ingredient");
     }
   };
 
@@ -84,9 +92,150 @@ export default function KitchenPage() {
       }
 
       setIngredients((prev) => prev.filter((ing) => ing._id !== id));
+      toast.success("Ingredient deleted!");
     } catch (err) {
       console.error("Delete error:", err);
       setError(err instanceof Error ? err.message : "Failed to delete ingredient");
+      toast.error("Failed to delete ingredient");
+    }
+  };
+
+  const adjustQuantity = async (id: string, adjustment: number) => {
+    const ingredient = ingredients.find((ing) => ing._id === id);
+    if (!ingredient) return;
+
+    const currentQty = parseFloat(ingredient.quantity);
+    const newQty = Math.max(0, currentQty + adjustment);
+
+    if (newQty === 0) {
+      if (confirm("Quantity will be 0. Delete this ingredient?")) {
+        await deleteIngredient(id);
+      }
+      return;
+    }
+
+    // Optimistic update - update UI immediately
+    setIngredients((prev) => prev.map((ing) => (ing._id === id ? { ...ing, quantity: newQty.toString() } : ing)));
+
+    // Then sync with backend
+    try {
+      const updatedIngredient = { ...ingredient, quantity: newQty.toString() };
+
+      const response = await fetch(`/api/ingredients/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedIngredient),
+      });
+
+      if (!response.ok) {
+        // Revert on error
+        setIngredients((prev) => prev.map((ing) => (ing._id === id ? { ...ing, quantity: currentQty.toString() } : ing)));
+        throw new Error("Failed to update quantity");
+      }
+    } catch (err) {
+      console.error("Update quantity error:", err);
+      toast.error("Failed to update quantity");
+    }
+  };
+
+  const toggleEssential = async (id: string) => {
+    const ingredient = ingredients.find((ing) => ing._id === id);
+    if (!ingredient) return;
+
+    try {
+      const updatedIngredient = { ...ingredient, isEssential: !ingredient.isEssential };
+
+      const response = await fetch(`/api/ingredients/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedIngredient),
+      });
+
+      if (!response.ok) throw new Error("Failed to update essential status");
+
+      setIngredients((prev) => prev.map((ing) => (ing._id === id ? { ...ing, isEssential: !ing.isEssential } : ing)));
+
+      toast.success(ingredient.isEssential ? "Removed from essentials" : "Marked as essential!");
+
+      // Check if we should add to shopping list
+      await checkAndAddToShoppingList(ingredient);
+    } catch (err) {
+      console.error("Toggle essential error:", err);
+      toast.error("Failed to update essential status");
+    }
+  };
+
+  const checkAndAddToShoppingList = async (ingredient: Ingredient) => {
+    // If marking as essential and quantity is 0, add to shopping list
+    if (!ingredient.isEssential && parseFloat(ingredient.quantity) === 0) {
+      try {
+        const response = await fetch("/api/shopping-list", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: ingredient.name,
+            quantity: "1",
+            unit: ingredient.unit,
+            category: ingredient.category,
+          }),
+        });
+
+        if (response.ok) {
+          toast.success(`${ingredient.name} added to shopping list!`);
+        }
+      } catch (err) {
+        // Silently fail - already marked as essential
+        console.log("Item might already be in shopping list");
+      }
+    }
+  };
+
+  const toggleSelectItem = (id: string) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectAll) {
+      setSelectedItems(new Set());
+    } else {
+      const allIds = filteredIngredients.map((ing) => ing._id);
+      setSelectedItems(new Set(allIds));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  const batchDelete = async () => {
+    if (selectedItems.size === 0) {
+      toast.error("No items selected");
+      return;
+    }
+
+    if (!confirm(`Delete ${selectedItems.size} selected item(s)?`)) return;
+
+    try {
+      const response = await fetch("/api/ingredients/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedItems) }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete items");
+      }
+
+      setIngredients((prev) => prev.filter((ing) => !selectedItems.has(ing._id)));
+      setSelectedItems(new Set());
+      setSelectAll(false);
+      toast.success(`${selectedItems.size} items deleted!`);
+    } catch (err) {
+      console.error("Batch delete error:", err);
+      toast.error("Failed to delete items");
     }
   };
 
@@ -111,9 +260,11 @@ export default function KitchenPage() {
       }
 
       await fetchIngredients();
+      toast.success("New ingredient added!");
     } catch (err) {
       console.error("Add error:", err);
       setError(err instanceof Error ? err.message : "Failed to add ingredient");
+      toast.error("Failed to add ingredient");
     }
   };
 
@@ -157,12 +308,14 @@ export default function KitchenPage() {
 
   const categoryStats = getCategoryStats();
 
+  // Low stock essentials
+  const lowStockEssentials = ingredients.filter((ing) => ing.isEssential && parseFloat(ing.quantity) <= 5);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f0eae3] via-[#ece7e0] to-[#eae4dd]">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-[#372f29] mx-auto mb-4" />
-
           <p className="text-gray-600">Loading your kitchen...</p>
         </div>
       </div>
@@ -171,6 +324,8 @@ export default function KitchenPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0eae3] via-[#ece7e0] to-[#eae4dd] py-12 px-4">
+      <Toaster position="top-center" />
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -189,10 +344,35 @@ export default function KitchenPage() {
               </Button>
             </Link>
             <Link href="/recipes">
-              <Button className="bg-gradient-to-r from-[#372f29] to-[#211b16] hover:from-[#211b16] hover:to-[#372f29] cursor-pointer shadow-lg hover:shadow-xl transition-all text-white">Generate Recipes</Button>
+              <Button className="bg-gradient-to-r from-[#372f29] to-[#211b16] hover:from-[#211b16] hover:to-[#372f29] cursor-pointer shadow-lg hover:shadow-xl transition-all text-white">
+                <ChefHat className="mr-2 h-5 w-5" />
+                Generate Recipes
+              </Button>
             </Link>
           </div>
         </div>
+
+        {/* Low Stock Alert */}
+        {lowStockEssentials.length > 0 && (
+          <div className="mb-8 max-w-4xl mx-auto">
+            <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-lg">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 text-orange-500 mr-3 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-orange-900 mb-2">Low Stock Alert</h3>
+                  <p className="text-sm text-orange-800 mb-2">These essential items are running low:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {lowStockEssentials.map((ing) => (
+                      <span key={ing._id} className="px-3 py-1 bg-orange-100 text-orange-900 rounded-full text-sm font-medium">
+                        {ing.name} ({ing.quantity} {ing.unit})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg max-w-4xl mx-auto">
@@ -226,6 +406,43 @@ export default function KitchenPage() {
                   </button>
                 ))}
               </div>
+
+              {/* Batch Mode Toggle */}
+              {filteredIngredients.length > 0 && (
+                <div className="flex items-center justify-between p-3 bg-[#ebe6de] rounded-lg border border-[#ded8c5]">
+                  <Button
+                    onClick={() => {
+                      setBatchMode(!batchMode);
+                      if (batchMode) {
+                        setSelectedItems(new Set());
+                        setSelectAll(false);
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className={`cursor-pointer ${batchMode ? "bg-[#372f29] text-white hover:bg-[#211b16]" : "bg-[#ebe6de] hover:bg-[#ded8c5]"}`}
+                  >
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    {batchMode ? "Exit Batch Mode" : "Batch Edit"}
+                  </Button>
+
+                  {batchMode && (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <input type="checkbox" checked={selectAll} onChange={toggleSelectAll} className="w-4 h-4 cursor-pointer accent-[#372f29]" />
+                        <span className="text-sm font-medium text-gray-700">Select All ({selectedItems.size} selected)</span>
+                      </div>
+
+                      {selectedItems.size > 0 && (
+                        <Button onClick={batchDelete} size="sm" className="bg-red-500 text-white hover:bg-red-600 cursor-pointer">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Selected
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -268,7 +485,10 @@ export default function KitchenPage() {
                       {/* Ingredients Grid */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-4">
                         {categoryIngredients.map((ingredient) => (
-                          <div key={ingredient._id} className="relative group bg-gradient-to-br from-[#ebe6de] to-[#f0eae3] rounded-xl p-5 border-2 border-[#ded8c5] hover:border-[#372f29] hover:shadow-lg transition-all min-h-[140px] flex flex-col">
+                          <div key={ingredient._id} className={`relative group bg-gradient-to-br from-[#ebe6de] to-[#f0eae3] rounded-xl p-4 border-2 hover:shadow-lg transition-all min-h-[180px] flex flex-col ${ingredient.isEssential ? "border-yellow-500" : "border-[#ded8c5] hover:border-[#372f29]"}`}>
+                            {/* Selection Checkbox - Only in Batch Mode */}
+                            {batchMode && <input type="checkbox" checked={selectedItems.has(ingredient._id)} onChange={() => toggleSelectItem(ingredient._id)} className="absolute top-3 left-3 w-5 h-5 cursor-pointer accent-[#372f29] z-10" />}
+
                             {editingId === ingredient._id ? (
                               <div className="space-y-2 flex-1 flex flex-col">
                                 <Input placeholder="Name" value={ingredient.name} onChange={(e) => updateIngredient(ingredient._id, "name", e.target.value)} className="text-sm" />
@@ -285,25 +505,63 @@ export default function KitchenPage() {
                                   <option value="oz">oz</option>
                                   <option value="lbs">lbs</option>
                                 </select>
-                                <Button onClick={() => saveEdit(ingredient._id)} size="sm" className="w-full text-xs cursor-pointer mt-auto">
-                                  Save
-                                </Button>
+                                <div className="flex gap-1 mt-auto">
+                                  <Button onClick={() => saveEdit(ingredient._id)} size="sm" className="flex-1 text-xs cursor-pointer bg-[#372f29] hover:bg-[#211b16] text-white">
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button onClick={() => setEditingId(null)} size="sm" variant="outline" className="flex-1 text-xs cursor-pointer">
+                                    <XIcon className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <>
-                                <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                  <button onClick={() => setEditingId(ingredient._id)} className="w-full text-xs cursor-pointer mt-auto bg-[#372f29] hover:bg-[#211b16] text-white">
-                                    <Edit2 className="h-3 w-3" />
-                                  </button>
-                                  <button onClick={() => deleteIngredient(ingredient._id)} className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full cursor-pointer shadow-lg">
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
-                                </div>
-                                <div className="text-center flex-1 flex flex-col justify-center">
-                                  <h3 className="font-bold text-gray-900 mb-2 break-words">{ingredient.name}</h3>
-                                  <p className="text-sm text-[#372f29] font-semibold">
+                                {/* Action Buttons Row - Only on Hover */}
+                                {!batchMode && (
+                                  <div className="absolute top-2 left-2 right-2 flex justify-evenly gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <button onClick={() => toggleEssential(ingredient._id)} className={`p-2 rounded-lg cursor-pointer shadow-md transition-all hover:scale-105 ${ingredient.isEssential ? "bg-yellow-500 hover:bg-yellow-600" : "bg-[#ded8c5] hover:bg-yellow-500"}`} title={ingredient.isEssential ? "Remove from essentials" : "Mark as essential"}>
+                                      <Flag className={`h-4 w-4 ${ingredient.isEssential ? "text-white" : "text-yellow-600"}`} />
+                                    </button>
+                                    <button onClick={() => setEditingId(ingredient._id)} className="p-2 bg-[#372f29] hover:bg-[#211b16] text-white rounded-lg cursor-pointer shadow-md transition-all hover:scale-105" title="Edit">
+                                      <Edit2 className="h-4 w-4" />
+                                    </button>
+                                    <button onClick={() => deleteIngredient(ingredient._id)} className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg cursor-pointer shadow-md transition-all hover:scale-105" title="Delete">
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                )}
+
+                                <div className="text-center flex-1 flex flex-col justify-center mt-8">
+                                  <h3 className="font-bold text-gray-900 mb-2 break-words text-sm">{ingredient.name}</h3>
+                                  <p className="text-sm text-[#372f29] font-semibold mb-3">
                                     {ingredient.quantity} {ingredient.unit}
                                   </p>
+
+                                  {/* Quick Adjust Buttons */}
+                                  {!batchMode && (
+                                    <div className="flex gap-2 mt-auto">
+                                      <button
+                                        onClick={() => {
+                                          const adjustment = ingredient.unit === "grams" ? -100 : -1;
+                                          adjustQuantity(ingredient._id, adjustment);
+                                        }}
+                                        className="flex-1 py-2 bg-[#ded8c5] hover:bg-[#372f29] hover:text-white rounded-lg transition-colors cursor-pointer font-semibold"
+                                        title="Decrease"
+                                      >
+                                        <Minus className="h-4 w-4 mx-auto" />
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          const adjustment = ingredient.unit === "grams" ? 100 : 1;
+                                          adjustQuantity(ingredient._id, adjustment);
+                                        }}
+                                        className="flex-1 py-2 bg-[#ded8c5] hover:bg-[#372f29] hover:text-white rounded-lg transition-colors cursor-pointer font-semibold"
+                                        title="Increase"
+                                      >
+                                        <Plus className="h-4 w-4 mx-auto" />
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
                               </>
                             )}

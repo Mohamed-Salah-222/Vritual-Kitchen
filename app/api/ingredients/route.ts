@@ -42,16 +42,33 @@ export async function POST(request: NextRequest) {
 
     await connectDB();
 
+    // Check for duplicates and merge
     const savedIngredients = await Promise.all(
       ingredients.map(async (ing) => {
-        const ingredient = new Ingredient({
+        // Check if ingredient already exists (case-insensitive)
+        const existing = await Ingredient.findOne({
           userId,
-          name: ing.name,
-          quantity: ing.quantity,
-          unit: ing.unit,
-          category: ing.category,
+          name: { $regex: new RegExp(`^${ing.name}$`, "i") },
         });
-        return await ingredient.save();
+
+        if (existing) {
+          // Merge: Add quantities (convert to numbers, handle different units)
+          const newQuantity = parseFloat(existing.quantity) + parseFloat(ing.quantity);
+          existing.quantity = newQuantity.toString();
+          existing.lastUpdated = new Date();
+          return await existing.save();
+        } else {
+          // Create new ingredient
+          const ingredient = new Ingredient({
+            userId,
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            category: ing.category,
+            isEssential: false, // Default to not essential
+          });
+          return await ingredient.save();
+        }
       })
     );
 
